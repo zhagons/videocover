@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <title>短视频封面生成器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .control-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            height: fit-content;
+        }
+        
+        .preview-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            color: #2c3e50;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: #3498db;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #34495e;
+        }
+        
+        textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s;
+            resize: vertical;
+            font-family: inherit;
+        }
+        textarea {
+             min-height: 100px;
+        }
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            background: #f8f9fa;
+            border-color: #2980b9;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .preview-container {
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #f8f9fa;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .preview-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .blur-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(15px);
+            transform: scale(1.1);
+            z-index: 1;
+        }
+        
+        .main-image-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .main-image {
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            max-height: 90%;
+            display: block;
+            object-fit: contain;
+        }
+        
+        .text-container {
+            position: absolute;
+            width: 100%;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        .text-line {
+            text-align: center;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            color: white;
+            width: 90%;
+            margin: 2px 0;
+            line-height: 1.2;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-download {
+            background: #2ecc71;
+            color: white;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+        }
+        
+        .btn-download:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-download:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .range-value {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        
+        .platform-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .platform-tab {
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .platform-tab.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .color-picker input {
+            flex: 1;
+            height: 40px;
+        }
+        
+        .color-picker span {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid #ddd;
+        }
+        
+        .size-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .size-option {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .size-option:hover {
+            border-color: #3498db;
+        }
+        
+        .size-option.active {
+            border-color: #3498db;
+            background: #eaf5ff;
+        }
+        
+        .size-option .ratio {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .size-option .dimensions {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .custom-size {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .custom-size input {
+            flex: 1;
+            width: 40%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .style-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .style-controls .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .text-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .download-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+        }
+        
+        .download-status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .download-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        
+        .download-status.processing {
+            background: #cce5ff;
+            color: #004085;
+            display: block;
+        }
+        
+        .text-tips {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel, .preview-panel {
+                width: 100%;
+            }
+            
+            .style-controls, .text-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: white;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        #hidden-canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-photo-video"></i> 短视频封面生成器</h1>
+        <p class="subtitle">上传图片，添加吸引人的文案，自定义字体和尺寸，一键生成各大短视频平台专业封面图</p>
+    </header>
+    
+    <div class="container">
+        <div class="control-panel">
+            <h2 class="section-title"><i class="fas fa-sliders-h"></i> 编辑控制面板</h2>
+            
+            <div class="form-group">
+                <label><i class="fas fa-cloud-upload-alt"></i> 上传图片</label>
+                <div class="upload-area" id="image-upload">
+                    <div class="upload-icon"><i class="fas fa-images"></i></div>
+                    <p>点击或拖拽图片到此处</p>
+                    <input type="file" accept="image/*" style="display: none;" id="file-input">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-font"></i> 封面文案</label>
+                <textarea id="cover-text" placeholder="输入吸引人的标题文案...支持多行文字，按回车换行&#10;例如：&#10;第一行：主标题&#10;第二行：副标题">这才是正确的方式！
+轻松学会小技巧
+点击观看完整教程</textarea>
+                <div class="text-tips">提示：按回车键换行，支持多行文字显示</div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-paint-brush"></i> 文字样式</label>
+                <div class="text-controls">
+                    <div>
+                        <label for="font-family">字体</label>
+                        <select id="font-family">
+                            <option value="'Noto Sans SC', sans-serif">思源黑体</option>
+                            <option value="'Helvetica Neue', sans-serif">Helvetica</option>
+                            <option value="'Georgia', serif">Georgia</option>
+                            <option value="'Impact', sans-serif">Impact</option>
+                            <option value="'Courier New', monospace">Courier New</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="font-size">大小</label>
+                        <input type="range" id="font-size" min="20" max="80" value="42">
+                        <div class="range-value">
+                            <span>小</span>
+                            <span id="font-size-value">42px</span>
+                            <span>大</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <label for="text-color">颜色</label>
+                    <div class="color-picker">
+                        <input type="color" id="text-color" value="#ffffff">
+                        <span id="color-preview" style="background: #ffffff"></span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <label for="line-height">行高</label>
+                    <input type="range" id="line-height" min="100" max="200" value="120">
+                    <div class="range-value">
+                        <span>紧凑</span>
+                        <span id="line-height-value">120%</span>
+                        <span>宽松</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-text-height"></i> 文字位置</label>
+                <input type="range" id="text-position" min="10" max="90" value="50">
+                <div class="range-value">
+                    <span>顶部</span>
+                    <span id="position-value">居中</span>
+                    <span>底部</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-expand-arrows-alt"></i> 封面尺寸</label>
+                <div class="size-options">
+                    <div class="size-option active" data-ratio="9:16" data-width="1080" data-height="1920">
+                        <div class="ratio">9:16</div>
+                        <div class="dimensions">抖音/快手</div>
+                    </div>
+                    <div class="size-option" data-ratio="16:9" data-width="1280" data-height="720">
+                        <div class="ratio">16:9</div>
+                        <div class="dimensions">YouTube/B站</div>
+                    </div>
+                    <div class="size-option" data-ratio="1:1" data-width="1080" data-height="1080">
+                        <div class="ratio">1:1</div>
+                        <div class="dimensions">Instagram</div>
+                    </div>
+                    <div class="size-option" data-ratio="4:5" data-width="1080" data-height="1350">
+                        <div class="ratio">4:5</div>
+                        <div class="dimensions">小红书</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <label>自定义尺寸</label>
+                    <div class="custom-size">
+                        <input type="number" id="custom-width" placeholder="宽度" value="1080">
+                        <span style="line-height: 40px;">×</span>
+                        <input type="number" id="custom-height" placeholder="高度" value="1920">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-layer-group"></i> 样式设置</label>
+                <div class="style-controls">
+                    <div>
+                        <label for="blur-intensity">模糊强度</label>
+                        <input type="range" id="blur-intensity" min="5" max="30" value="15">
+                        <div class="range-value">
+                            <span>弱</span>
+                            <span id="blur-value">15px</span>
+                            <span>强</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="border-radius">圆角大小</label>
+                        <input type="range" id="border-radius" min="0" max="50" value="12">
+                        <div class="range-value">
+                            <span>直角</span>
+                            <span id="radius-value">12px</span>
+                            <span>圆角</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <label for="margin-size">外边距</label>
+                    <input type="range" id="margin-size" min="0" max="20" value="5">
+                    <div class="range-value">
+                        <span>小</span>
+                        <span id="margin-value">5%</span>
+                        <span>大</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" id="reset-btn">
+                <i class="fas fa-redo"></i> 重置设置
+            </button>
+            <button class="btn btn-download" id="download-btn">
+                <i class="fas fa-download"></i> 下载封面图片
+            </button>
+            
+            <div class="download-status" id="download-status"></div>
+        </div>
+        
+        <div class="preview-panel">
+            <h2 class="section-title"><i class="fas fa-eye"></i> 封面预览</h2>
+            
+            <div class="preview-container" id="preview-container" style="aspect-ratio: 9/16;">
+                <div class="preview-wrapper">
+                    <img class="blur-background" id="blur-bg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1080' height='1920' viewBox='0 0 1080 1920'%3E%3Crect width='1080' height='1920' fill='%23cccccc'/%3E%3C/svg%3E" alt="模糊背景">
+                    <div class="main-image-container">
+                        <img class="main-image" id="preview-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1080' height='1920' viewBox='0 0 1080 1920'%3E%3Crect width='1080' height='1920' fill='%23eeeeee'/%3E%3Ctext x='540' y='960' font-family='Arial' font-size='24' fill='%23999999' text-anchor='middle'%3E上传图片预览%3C/text%3E%3C/svg%3E" alt="预览图">
+                    </div>
+                    <div class="text-container" id="text-container"></div>
+                </div>
+            </div>
+            
+            <p>实时预览效果 - 支持多行文字显示</p>
+        </div>
+    </div>
+
+    <!-- 隐藏的Canvas用于生成图片 -->
+    <canvas id="hidden-canvas"></canvas>
+
+    <div class="footer">
+        <p>© 2023 短视频封面生成器 | 设计精美、功能强大的封面制作工具</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const fileInput = document.getElementById('file-input');
+            const uploadArea = document.getElementById('image-upload');
+            const previewImage = document.getElementById('preview-image');
+            const blurBackground = document.getElementById('blur-bg');
+            const coverText = document.getElementById('cover-text');
+            const fontFamily = document.getElementById('font-family');
+            const fontSize = document.getElementById('font-size');
+            const fontSizeValue = document.getElementById('font-size-value');
+            const textColor = document.getElementById('text-color');
+            const colorPreview = document.getElementById('color-preview');
+            const textPosition = document.getElementById('text-position');
+            const positionValue = document.getElementById('position-value');
+            const resetBtn = document.getElementById('reset-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const sizeOptions = document.querySelectorAll('.size-option');
+            const customWidth = document.getElementById('custom-width');
+            const customHeight = document.getElementById('custom-height');
+            const previewContainer = document.getElementById('preview-container');
+            const downloadStatus = document.getElementById('download-status');
+            const textContainer = document.getElementById('text-container');
+            const lineHeight = document.getElementById('line-height');
+            const lineHeightValue = document.getElementById('line-height-value');
+            const hiddenCanvas = document.getElementById('hidden-canvas');
+            const ctx = hiddenCanvas.getContext('2d');
+            
+            // 样式控制元素
+            const blurIntensity = document.getElementById('blur-intensity');
+            const blurValue = document.getElementById('blur-value');
+            const borderRadius = document.getElementById('border-radius');
+            const radiusValue = document.getElementById('radius-value');
+            const marginSize = document.getElementById('margin-size');
+            const marginValue = document.getElementById('margin-value');
+            
+            // 当前图片和设置
+            let currentImage = null;
+            let isProcessing = false;
+            
+            // 上传图片功能
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.style.background = '#f1f8ff';
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.style.background = '';
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.style.background = '';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleImageUpload(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length) {
+                    handleImageUpload(fileInput.files[0]);
+                }
+            });
+            
+            function handleImageUpload(file) {
+                if (!file.type.match('image.*')) {
+                    alert('请上传图片文件！');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous'; // 解决跨域问题
+                    img.onload = function() {
+                        currentImage = img;
+                        previewImage.src = e.target.result;
+                        blurBackground.src = e.target.result;
+                        updatePreviewStyles();
+                    };
+                    img.onerror = function() {
+                        // 如果跨域失败，尝试重新加载
+                        const newImg = new Image();
+                        newImg.onload = function() {
+                            currentImage = newImg;
+                            previewImage.src = e.target.result;
+                            blurBackground.src = e.target.result;
+                            updatePreviewStyles();
+                        };
+                        newImg.src = e.target.result;
+                    };
+                    img.src = e.target.result;
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // 更新预览样式
+            function updatePreviewStyles() {
+                // 更新模糊强度
+                const blurValue = blurIntensity.value + 'px';
+                blurBackground.style.filter = `blur(${blurValue})`;
+                document.getElementById('blur-value').textContent = blurValue;
+                
+                // 更新圆角
+                const radiusValue = borderRadius.value + 'px';
+                previewImage.style.borderRadius = radiusValue;
+                document.getElementById('radius-value').textContent = radiusValue;
+                
+                // 更新外边距
+                const marginValue = marginSize.value + '%';
+                document.getElementById('margin-value').textContent = marginValue;
+                
+                // 更新行高
+                const lineHeightPercent = lineHeight.value + '%';
+                lineHeightValue.textContent = lineHeightPercent;
+                
+                // 更新文字
+                updateText();
+            }
+            
+            // 样式控制事件监听
+            blurIntensity.addEventListener('input', updatePreviewStyles);
+            borderRadius.addEventListener('input', updatePreviewStyles);
+            marginSize.addEventListener('input', updatePreviewStyles);
+            lineHeight.addEventListener('input', updatePreviewStyles);
+            
+            // 文字样式更新
+            coverText.addEventListener('input', updateText);
+            fontFamily.addEventListener('change', updateText);
+            fontSize.addEventListener('input', updateText);
+            textColor.addEventListener('input', updateText);
+            textPosition.addEventListener('input', updateText);
+            
+            function updateText() {
+                const text = coverText.value || '请输入文案';
+                
+                // 清空现有文字
+                textContainer.innerHTML = '';
+                
+                // 处理多行文字
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                
+                if (lines.length === 0) {
+                    // 如果没有文字，添加一个空行
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'text-line';
+                    lineDiv.textContent = ' ';
+                    textContainer.appendChild(lineDiv);
+                    return;
+                }
+                
+                // 计算文字位置
+                const position = textPosition.value + '%';
+                textContainer.style.top = position;
+                textContainer.style.transform = 'translateY(-50%)';
+                
+                // 更新位置文本
+                if (textPosition.value < 33) {
+                    positionValue.textContent = '顶部';
+                } else if (textPosition.value < 66) {
+                    positionValue.textContent = '居中';
+                } else {
+                    positionValue.textContent = '底部';
+                }
+                
+                // 设置文字样式
+                const size = fontSize.value + 'px';
+                const font = fontFamily.value;
+                const color = textColor.value;
+                const lineHeightPercent = lineHeight.value + '%';
+                
+                // 添加每一行文字
+                lines.forEach((lineText, index) => {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'text-line';
+                    lineDiv.textContent = lineText;
+                    lineDiv.style.fontSize = size;
+                    lineDiv.style.fontFamily = font;
+                    lineDiv.style.color = color;
+                    lineDiv.style.lineHeight = lineHeightPercent;
+                    textContainer.appendChild(lineDiv);
+                });
+                
+                fontSizeValue.textContent = size;
+                colorPreview.style.background = color;
+            }
+            
+            // 尺寸选择
+            sizeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    sizeOptions.forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const ratio = this.getAttribute('data-ratio');
+                    const width = this.getAttribute('data-width');
+                    const height = this.getAttribute('data-height');
+                    
+                    // 更新自定义尺寸输入框
+                    customWidth.value = width;
+                    customHeight.value = height;
+                    
+                    // 更新预览区域尺寸
+                    updatePreviewSize(width, height);
+                });
+            });
+            
+            // 自定义尺寸
+            customWidth.addEventListener('input', updateCustomSize);
+            customHeight.addEventListener('input', updateCustomSize);
+            
+            function updateCustomSize() {
+                const width = customWidth.value;
+                const height = customHeight.value;
+                
+                if (width && height) {
+                    updatePreviewSize(width, height);
+                }
+            }
+            
+            function updatePreviewSize(width, height) {
+                // 计算宽高比
+                const ratio = width / height;
+                previewContainer.style.aspectRatio = `${width}/${height}`;
+            }
+            
+            // 重置按钮
+            resetBtn.addEventListener('click', function() {
+                coverText.value = '这才是正确的方式！\n轻松学会小技巧\n点击观看完整教程';
+                fontFamily.value = "'Noto Sans SC', sans-serif";
+                fontSize.value = 42;
+                textColor.value = '#ffffff';
+                textPosition.value = 50;
+                lineHeight.value = 120;
+                blurIntensity.value = 15;
+                borderRadius.value = 12;
+                marginSize.value = 5;
+                
+                // 重置尺寸选项
+                sizeOptions.forEach(o => o.classList.remove('active'));
+                sizeOptions[0].classList.add('active');
+                customWidth.value = 1080;
+                customHeight.value = 1920;
+                updatePreviewSize(1080, 1920);
+                
+                updatePreviewStyles();
+            });
+            
+            // 下载功能
+            downloadBtn.addEventListener('click', generateAndDownloadImage);
+            
+            function generateAndDownloadImage() {
+                if (isProcessing) return;
+                
+                if (!currentImage) {
+                    showStatus('请先上传图片！', 'error');
+                    return;
+                }
+                
+                isProcessing = true;
+                downloadBtn.disabled = true;
+                showStatus('正在生成图片，请稍候...', 'processing');
+                
+                // 延迟执行以确保UI更新
+                setTimeout(() => {
+                    try {
+                        // 获取当前尺寸
+                        const width = parseInt(customWidth.value);
+                        const height = parseInt(customHeight.value);
+                        
+                        // 设置Canvas尺寸
+                        hiddenCanvas.width = width;
+                        hiddenCanvas.height = height;
+                        
+                        // 清除Canvas
+                        ctx.clearRect(0, 0, width, height);
+                        
+                        // 绘制背景（白色，避免透明背景问题）
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // 绘制模糊背景
+                        const blurAmount = parseInt(blurIntensity.value);
+                        const marginPercent = parseInt(marginSize.value);
+                        const radius = parseInt(borderRadius.value);
+                        
+                        // 计算主图片的位置和尺寸（带外边距）
+                        const margin = (marginPercent / 100) * Math.min(width, height);
+                        
+                        // 绘制模糊背景（填充整个画布）
+                        const imgAspect = currentImage.width / currentImage.height;
+                        const canvasAspect = width / height;
+                        
+                        let bgDrawWidth, bgDrawHeight, bgOffsetX, bgOffsetY;
+                        
+                        if (imgAspect > canvasAspect) {
+                            // 图片更宽，以高度为基准
+                            bgDrawHeight = height;
+                            bgDrawWidth = height * imgAspect;
+                            bgOffsetX = (width - bgDrawWidth) / 2;
+                            bgOffsetY = 0;
+                        } else {
+                            // 图片更高，以宽度为基准
+                            bgDrawWidth = width;
+                            bgDrawHeight = width / imgAspect;
+                            bgOffsetX = 0;
+                            bgOffsetY = (height - bgDrawHeight) / 2;
+                        }
+                        
+                        // 应用模糊效果
+                        ctx.save();
+                        ctx.filter = `blur(${blurAmount}px)`;
+                        ctx.drawImage(currentImage, bgOffsetX, bgOffsetY, bgDrawWidth, bgDrawHeight);
+                        ctx.restore();
+                        
+                        // 计算主图片的尺寸（保持比例）
+                        const maxMainWidth = width - 2 * margin;
+                        const maxMainHeight = height - 2 * margin;
+                        
+                        let mainWidth, mainHeight;
+                        
+                        if (imgAspect > maxMainWidth / maxMainHeight) {
+                            // 图片更宽，以宽度为基准
+                            mainWidth = maxMainWidth;
+                            mainHeight = mainWidth / imgAspect;
+                        } else {
+                            // 图片更高，以高度为基准
+                            mainHeight = maxMainHeight;
+                            mainWidth = mainHeight * imgAspect;
+                        }
+                        
+                        // 计算居中位置
+                        const mainX = margin + (maxMainWidth - mainWidth) / 2;
+                        const mainY = margin + (maxMainHeight - mainHeight) / 2;
+                        
+                        // 绘制圆角矩形遮罩
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(mainX + radius, mainY);
+                        ctx.lineTo(mainX + mainWidth - radius, mainY);
+                        ctx.quadraticCurveTo(mainX + mainWidth, mainY, mainX + mainWidth, mainY + radius);
+                        ctx.lineTo(mainX + mainWidth, mainY + mainHeight - radius);
+                        ctx.quadraticCurveTo(mainX + mainWidth, mainY + mainHeight, mainX + mainWidth - radius, mainY + mainHeight);
+                        ctx.lineTo(mainX + radius, mainY + mainHeight);
+                        ctx.quadraticCurveTo(mainX, mainY + mainHeight, mainX, mainY + mainHeight - radius);
+                        ctx.lineTo(mainX, mainY + radius);
+                        ctx.quadraticCurveTo(mainX, mainY, mainX + radius, mainY);
+                        ctx.closePath();
+                        ctx.clip();
+                        
+                        // 绘制主图片（居中显示）
+                        ctx.drawImage(currentImage, mainX, mainY, mainWidth, mainHeight);
+                        ctx.restore();
+                        
+                        // 绘制文字
+                        const text = coverText.value || '请输入文案';
+                        const textY = (parseInt(textPosition.value) / 100) * height;
+                        const lines = text.split('\n').filter(line => line.trim() !== '');
+                        
+                        if (lines.length > 0) {
+                            // 设置文字样式
+                            const fontSizeVal = parseInt(fontSize.value);
+                            ctx.font = `bold ${fontSizeVal}px ${fontFamily.value}`;
+                            ctx.fillStyle = textColor.value;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            
+                            // 添加文字阴影
+                            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                            ctx.shadowBlur = 4;
+                            ctx.shadowOffsetX = 2;
+                            ctx.shadowOffsetY = 2;
+                            
+                            // 计算行高
+                            const lineHeightVal = fontSizeVal * (parseInt(lineHeight.value) / 100);
+                            
+                            // 计算总文字高度
+                            const totalTextHeight = (lines.length - 1) * lineHeightVal;
+                            
+                            // 绘制多行文字
+                            lines.forEach((line, index) => {
+                                const y = textY - totalTextHeight / 2 + index * lineHeightVal;
+                                ctx.fillText(line, width / 2, y);
+                            });
+                            
+                            // 移除阴影
+                            ctx.shadowColor = 'transparent';
+                            ctx.shadowBlur = 0;
+                            ctx.shadowOffsetX = 0;
+                            ctx.shadowOffsetY = 0;
+                        }
+                        
+                        // 生成下载链接
+                        const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.95);
+                        downloadImage(dataURL, '短视频封面.jpg');
+                        showStatus('图片已生成，下载即将开始！', 'success');
+                        
+                    } catch (error) {
+                        console.error('生成图片失败:', error);
+                        showStatus('生成图片失败，请重试！', 'error');
+                    } finally {
+                        setTimeout(() => {
+                            isProcessing = false;
+                            downloadBtn.disabled = false;
+                            hideStatus();
+                        }, 2000);
+                    }
+                }, 100);
+            }
+            
+            // 下载图片
+            function downloadImage(dataUrl, filename) {
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            // 显示状态信息
+            function showStatus(message, type) {
+                downloadStatus.textContent = message;
+                downloadStatus.className = 'download-status ' + type;
+            }
+            
+            // 隐藏状态信息
+            function hideStatus() {
+                setTimeout(() => {
+                    downloadStatus.className = 'download-status';
+                }, 3000);
+            }
+            
+            // 初始化
+            updatePreviewStyles();
+        });
+    </script>
+</body>
+</html>
