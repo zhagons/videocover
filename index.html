@@ -449,10 +449,44 @@
             display: block;
         }
 
+        .download-status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+
         .text-tips {
             font-size: 12px;
             color: #7f8c8d;
             margin-top: 5px;
+        }
+
+        .wechat-tips {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .save-guide {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .save-guide ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .save-guide li {
+            margin-bottom: 8px;
         }
 
         @media (max-width: 900px) {
@@ -481,6 +515,10 @@
         }
 
         #hidden-canvas {
+            display: none;
+        }
+
+        #result-image {
             display: none;
         }
     </style>
@@ -679,10 +717,22 @@
                 <i class="fas fa-redo"></i> 重置设置
             </button>
             <button class="btn btn-download" id="download-btn">
-                <i class="fas fa-download"></i> 下载封面图片
+                <i class="fas fa-download"></i> 生成封面图片
             </button>
 
+            <div class="wechat-tips" id="wechat-tips">
+                <i class="fas fa-info-circle"></i> 微信内无法自动下载，请按照提示手动保存图片
+            </div>
+
             <div class="download-status" id="download-status"></div>
+            <div class="save-guide" id="save-guide">
+                <h4><i class="fas fa-info-circle"></i> 微信内保存图片指南：</h4>
+                <ol>
+                    <li>长按下方生成的图片</li>
+                    <li>选择"保存图片"或"保存到手机"</li>
+                    <li>如果无法保存，请截图后裁剪使用</li>
+                </ol>
+            </div>
         </div>
 
         <div class="preview-panel">
@@ -703,6 +753,14 @@
             </div>
 
             <p>实时预览效果 - 支持多行文字显示</p>
+
+            <!-- 结果图片显示区域 -->
+            <div id="result-container" style="display: none; margin-top: 20px; width: 100%;">
+                <h3 class="section-title"><i class="fas fa-image"></i> 生成的封面</h3>
+                <img id="result-image"
+                    style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <p class="text-tips">长按图片即可保存到手机</p>
+            </div>
         </div>
     </div>
 
@@ -710,7 +768,7 @@
     <canvas id="hidden-canvas"></canvas>
 
     <div class="footer">
-        <p>© 2025 短视频封面生成器 | 设计精美、功能强大的封面制作工具</p>
+        <p>© 2025 短视频封面生成器 | 微信内可正常使用</p>
     </div>
 
     <script>
@@ -739,6 +797,10 @@
             const lineHeight = document.getElementById('line-height');
             const lineHeightValue = document.getElementById('line-height-value');
             const hiddenCanvas = document.getElementById('hidden-canvas');
+            const resultContainer = document.getElementById('result-container');
+            const resultImage = document.getElementById('result-image');
+            const saveGuide = document.getElementById('save-guide');
+            const wechatTips = document.getElementById('wechat-tips');
             const ctx = hiddenCanvas.getContext('2d');
 
             // 样式控制元素
@@ -763,6 +825,17 @@
             // 当前图片和设置
             let currentImage = null;
             let isProcessing = false;
+
+            // 检测是否在微信内
+            function isWeChatBrowser() {
+                return /micromessenger/i.test(navigator.userAgent);
+            }
+
+            // 初始化微信提示
+            if (isWeChatBrowser()) {
+                wechatTips.style.display = 'block';
+                downloadBtn.innerHTML = '<i class="fas fa-image"></i> 生成封面图片';
+            }
 
             // 上传图片功能
             uploadArea.addEventListener('click', function () {
@@ -804,7 +877,7 @@
 
                 reader.onload = function (e) {
                     const img = new Image();
-                    img.crossOrigin = 'Anonymous'; // 解决跨域问题
+                    img.crossOrigin = 'Anonymous';
                     img.onload = function () {
                         currentImage = img;
                         previewImage.src = e.target.result;
@@ -812,7 +885,6 @@
                         updatePreviewStyles();
                     };
                     img.onerror = function () {
-                        // 如果跨域失败，尝试重新加载
                         const newImg = new Image();
                         newImg.onload = function () {
                             currentImage = newImg;
@@ -905,7 +977,6 @@
                 const lines = text.split('\n').filter(line => line.trim() !== '');
 
                 if (lines.length === 0) {
-                    // 如果没有文字，添加一个空行
                     const lineDiv = document.createElement('div');
                     lineDiv.className = 'text-line';
                     lineDiv.textContent = ' ';
@@ -1015,10 +1086,10 @@
                 updatePreviewStyles();
             });
 
-            // 下载功能
-            downloadBtn.addEventListener('click', generateAndDownloadImage);
+            // 生成图片功能
+            downloadBtn.addEventListener('click', generateImage);
 
-            function generateAndDownloadImage() {
+            function generateImage() {
                 if (isProcessing) return;
 
                 if (!currentImage) {
@@ -1195,10 +1266,23 @@
                             ctx.shadowOffsetY = 0;
                         }
 
-                        // 生成下载链接
+                        // 生成图片数据
                         const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.95);
-                        downloadImage(dataURL, '短视频封面.jpg');
-                        showStatus('图片已生成，下载即将开始！', 'success');
+
+                        if (isWeChatBrowser()) {
+                            // 微信内显示图片并提示手动保存
+                            resultImage.src = dataURL;
+                            resultContainer.style.display = 'block';
+                            saveGuide.style.display = 'block';
+                            showStatus('图片已生成，请长按图片保存', 'info');
+
+                            // 滚动到结果区域
+                            resultContainer.scrollIntoView({ behavior: 'smooth' });
+                        } else {
+                            // 其他浏览器直接下载
+                            downloadImage(dataURL, '短视频封面.jpg');
+                            showStatus('图片已生成，下载即将开始！', 'success');
+                        }
 
                     } catch (error) {
                         console.error('生成图片失败:', error);
@@ -1207,20 +1291,31 @@
                         setTimeout(() => {
                             isProcessing = false;
                             downloadBtn.disabled = false;
-                            hideStatus();
+                            if (!isWeChatBrowser()) {
+                                hideStatus();
+                            }
                         }, 2000);
                     }
                 }, 100);
             }
 
-            // 下载图片
+            // 下载图片（用于非微信环境）
             function downloadImage(dataUrl, filename) {
-                const link = document.createElement('a');
-                link.href = dataUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                try {
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error('下载失败:', error);
+                    // 如果下载失败，也显示图片让用户手动保存
+                    resultImage.src = dataUrl;
+                    resultContainer.style.display = 'block';
+                    saveGuide.style.display = 'block';
+                    showStatus('自动下载失败，请长按图片手动保存', 'info');
+                }
             }
 
             // 显示状态信息
