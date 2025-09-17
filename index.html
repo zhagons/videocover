@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -754,6 +755,10 @@
 
             <p>实时预览效果 - 支持多行文字显示</p>
 
+            <button class="btn btn-primary" id="fullscreen-btn" style="margin-top: 15px; width: 100%;">
+                <i class="fas fa-expand"></i> 全屏预览
+            </button>
+
             <!-- 结果图片显示区域 -->
             <div id="result-container" style="display: none; margin-top: 20px; width: 100%;">
                 <h3 class="section-title"><i class="fas fa-image"></i> 生成的封面</h3>
@@ -768,7 +773,7 @@
     <canvas id="hidden-canvas"></canvas>
 
     <div class="footer">
-        <p>© 2025 短视频封面生成器 | 微信内可正常使用</p>
+        <p>© 2025 短视频封面生成器 | 设计精美、功能强大的封面制作工具</p>
     </div>
 
     <script>
@@ -788,6 +793,7 @@
             const positionValue = document.getElementById('position-value');
             const resetBtn = document.getElementById('reset-btn');
             const downloadBtn = document.getElementById('download-btn');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
             const sizeOptions = document.querySelectorAll('.size-option');
             const customWidth = document.getElementById('custom-width');
             const customHeight = document.getElementById('custom-height');
@@ -1088,6 +1094,51 @@
 
             // 生成图片功能
             downloadBtn.addEventListener('click', generateImage);
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+            function toggleFullscreen() {
+                const previewContainer = document.getElementById('preview-container');
+                
+                if (!document.fullscreenElement) {
+                    if (previewContainer.requestFullscreen) {
+                        previewContainer.requestFullscreen();
+                    } else if (previewContainer.mozRequestFullScreen) { /* Firefox */
+                        previewContainer.mozRequestFullScreen();
+                    } else if (previewContainer.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                        previewContainer.webkitRequestFullscreen();
+                    } else if (previewContainer.msRequestFullscreen) { /* IE/Edge */
+                        previewContainer.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.mozCancelFullScreen) { /* Firefox */
+                        document.mozCancelFullScreen();
+                    } else if (document.webkitExitFullscreen) { /* Chrome, Safari & Opera */
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) { /* IE/Edge */
+                        document.msExitFullscreen();
+                    }
+                }
+            }
+
+            // 监听全屏状态变化，更新按钮图标
+            document.addEventListener('fullscreenchange', updateFullscreenButton);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+            document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+            document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+            function updateFullscreenButton() {
+                const icon = fullscreenBtn.querySelector('i');
+                if (document.fullscreenElement || document.webkitFullscreenElement || 
+                    document.mozFullScreenElement || document.msFullscreenElement) {
+                    icon.className = 'fas fa-compress';
+                    fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i> 退出全屏';
+                } else {
+                    icon.className = 'fas fa-expand';
+                    fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i> 全屏预览';
+                }
+            }
 
             function generateImage() {
                 if (isProcessing) return;
